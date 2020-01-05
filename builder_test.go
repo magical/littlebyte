@@ -89,7 +89,7 @@ func TestUint8(t *testing.T) {
 func TestUint16(t *testing.T) {
 	var b Builder
 	b.AddUint16(65534)
-	if err := builderBytesEq(&b, 255, 254); err != nil {
+	if err := builderBytesEq(&b, 254, 255); err != nil {
 		t.Error(err)
 	}
 }
@@ -97,7 +97,7 @@ func TestUint16(t *testing.T) {
 func TestUint24(t *testing.T) {
 	var b Builder
 	b.AddUint24(0xfffefd)
-	if err := builderBytesEq(&b, 255, 254, 253); err != nil {
+	if err := builderBytesEq(&b, 253, 254, 255); err != nil {
 		t.Error(err)
 	}
 }
@@ -105,7 +105,7 @@ func TestUint24(t *testing.T) {
 func TestUint24Truncation(t *testing.T) {
 	var b Builder
 	b.AddUint24(0x10111213)
-	if err := builderBytesEq(&b, 0x11, 0x12, 0x13); err != nil {
+	if err := builderBytesEq(&b, 0x13, 0x12, 0x11); err != nil {
 		t.Error(err)
 	}
 }
@@ -113,7 +113,7 @@ func TestUint24Truncation(t *testing.T) {
 func TestUint32(t *testing.T) {
 	var b Builder
 	b.AddUint32(0xfffefdfc)
-	if err := builderBytesEq(&b, 255, 254, 253, 252); err != nil {
+	if err := builderBytesEq(&b, 252, 253, 254, 255); err != nil {
 		t.Error(err)
 	}
 }
@@ -123,7 +123,7 @@ func TestUMultiple(t *testing.T) {
 	b.AddUint8(23)
 	b.AddUint32(0xfffefdfc)
 	b.AddUint16(42)
-	if err := builderBytesEq(&b, 23, 255, 254, 253, 252, 0, 42); err != nil {
+	if err := builderBytesEq(&b, 23, 252, 253, 254, 255, 42, 0); err != nil {
 		t.Error(err)
 	}
 }
@@ -178,7 +178,7 @@ func TestPreallocatedBuffer(t *testing.T) {
 		c.AddUint8(3)
 		c.AddUint8(4)
 	})
-	b.AddUint16(1286) // Outgrow buf by one byte.
+	b.AddUint16(6*256 + 5) // Outgrow buf by one byte.
 	want := []byte{1, 2, 3, 4, 0}
 	if !bytes.Equal(buf[:], want) {
 		t.Errorf("buf = %v want %v", buf, want)
