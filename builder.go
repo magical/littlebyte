@@ -27,7 +27,6 @@ type Builder struct {
 	child          *Builder
 	offset         int
 	pendingLenLen  int
-	pendingIsASN1  bool
 	inContinuation *bool
 }
 
@@ -175,6 +174,8 @@ func (b *Builder) callContinuation(f BuilderContinuation, arg *Builder) {
 }
 
 func (b *Builder) addLengthPrefixed(lenLen int, isASN1 bool, f BuilderContinuation) {
+	_ = isASN1
+
 	// Subsequent writes can be ignored if the builder has encountered an error.
 	if b.err != nil {
 		return
@@ -192,7 +193,6 @@ func (b *Builder) addLengthPrefixed(lenLen int, isASN1 bool, f BuilderContinuati
 		fixedSize:      b.fixedSize,
 		offset:         offset,
 		pendingLenLen:  lenLen,
-		pendingIsASN1:  isASN1,
 		inContinuation: b.inContinuation,
 	}
 
@@ -220,48 +220,6 @@ func (b *Builder) flushChild() {
 
 	if length < 0 {
 		panic("cryptobyte: internal error") // result unexpectedly shrunk
-	}
-
-	if child.pendingIsASN1 {
-		// For ASN.1, we reserved a single byte for the length. If that turned out
-		// to be incorrect, we have to move the contents along in order to make
-		// space.
-		if child.pendingLenLen != 1 {
-			panic("cryptobyte: internal error")
-		}
-		var lenLen, lenByte uint8
-		if int64(length) > 0xfffffffe {
-			b.err = errors.New("pending ASN.1 child too long")
-			return
-		} else if length > 0xffffff {
-			lenLen = 5
-			lenByte = 0x80 | 4
-		} else if length > 0xffff {
-			lenLen = 4
-			lenByte = 0x80 | 3
-		} else if length > 0xff {
-			lenLen = 3
-			lenByte = 0x80 | 2
-		} else if length > 0x7f {
-			lenLen = 2
-			lenByte = 0x80 | 1
-		} else {
-			lenLen = 1
-			lenByte = uint8(length)
-			length = 0
-		}
-
-		// Insert the initial length byte, make space for successive length bytes,
-		// and adjust the offset.
-		child.result[child.offset] = lenByte
-		extraBytes := int(lenLen - 1)
-		if extraBytes != 0 {
-			child.add(make([]byte, extraBytes)...)
-			childStart := child.offset + child.pendingLenLen
-			copy(child.result[childStart+extraBytes:], child.result[childStart:])
-		}
-		child.offset++
-		child.pendingLenLen = extraBytes
 	}
 
 	l := length
