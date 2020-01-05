@@ -78,20 +78,20 @@ func (b *Builder) AddUint8(v uint8) {
 	b.add(byte(v))
 }
 
-// AddUint16 appends a big-endian, 16-bit value to the byte string.
+// AddUint16 appends a little-endian, 16-bit value to the byte string.
 func (b *Builder) AddUint16(v uint16) {
-	b.add(byte(v>>8), byte(v))
+	b.add(byte(v), byte(v>>8))
 }
 
-// AddUint24 appends a big-endian, 24-bit value to the byte string. The highest
+// AddUint24 appends a little-endian, 24-bit value to the byte string. The highest
 // byte of the 32-bit input value is silently truncated.
 func (b *Builder) AddUint24(v uint32) {
-	b.add(byte(v>>16), byte(v>>8), byte(v))
+	b.add(byte(v), byte(v>>8), byte(v>>16))
 }
 
-// AddUint32 appends a big-endian, 32-bit value to the byte string.
+// AddUint32 appends a little-endian, 32-bit value to the byte string.
 func (b *Builder) AddUint32(v uint32) {
-	b.add(byte(v>>24), byte(v>>16), byte(v>>8), byte(v))
+	b.add(byte(v), byte(v>>8), byte(v>>16), byte(v>>24))
 }
 
 // AddBytes appends a sequence of bytes to the byte string.
@@ -135,17 +135,17 @@ func (b *Builder) AddUint8LengthPrefixed(f BuilderContinuation) {
 	b.addLengthPrefixed(1, false, f)
 }
 
-// AddUint16LengthPrefixed adds a big-endian, 16-bit length-prefixed byte sequence.
+// AddUint16LengthPrefixed adds a little-endian, 16-bit length-prefixed byte sequence.
 func (b *Builder) AddUint16LengthPrefixed(f BuilderContinuation) {
 	b.addLengthPrefixed(2, false, f)
 }
 
-// AddUint24LengthPrefixed adds a big-endian, 24-bit length-prefixed byte sequence.
+// AddUint24LengthPrefixed adds a little-endian, 24-bit length-prefixed byte sequence.
 func (b *Builder) AddUint24LengthPrefixed(f BuilderContinuation) {
 	b.addLengthPrefixed(3, false, f)
 }
 
-// AddUint32LengthPrefixed adds a big-endian, 32-bit length-prefixed byte sequence.
+// AddUint32LengthPrefixed adds a little-endian, 32-bit length-prefixed byte sequence.
 func (b *Builder) AddUint32LengthPrefixed(f BuilderContinuation) {
 	b.addLengthPrefixed(4, false, f)
 }
@@ -223,7 +223,7 @@ func (b *Builder) flushChild() {
 	}
 
 	l := length
-	for i := child.pendingLenLen - 1; i >= 0; i-- {
+	for i := 0; i < child.pendingLenLen; i++ {
 		child.result[child.offset+i] = uint8(l)
 		l >>= 8
 	}
