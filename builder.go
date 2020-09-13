@@ -105,7 +105,7 @@ func (b *Builder) AddBytes(v []byte) {
 // supplied to them. The child builder passed to the continuation can be used
 // to build the content of the length-prefixed sequence. For example:
 //
-//   parent := cryptobyte.NewBuilder()
+//   parent := littlebyte.NewBuilder()
 //   parent.AddUint8LengthPrefixed(func (child *Builder) {
 //     child.AddUint8(42)
 //     child.AddUint8LengthPrefixed(func (grandchild *Builder) {
@@ -199,7 +199,7 @@ func (b *Builder) addLengthPrefixed(lenLen int, isASN1 bool, f BuilderContinuati
 	b.callContinuation(f, b.child)
 	b.flushChild()
 	if b.child != nil {
-		panic("cryptobyte: internal error")
+		panic("littlebyte: internal error")
 	}
 }
 
@@ -219,7 +219,7 @@ func (b *Builder) flushChild() {
 	length := len(child.result) - child.pendingLenLen - child.offset
 
 	if length < 0 {
-		panic("cryptobyte: internal error") // result unexpectedly shrunk
+		panic("littlebyte: internal error") // result unexpectedly shrunk
 	}
 
 	l := length
@@ -228,12 +228,12 @@ func (b *Builder) flushChild() {
 		l >>= 8
 	}
 	if l != 0 {
-		b.err = fmt.Errorf("cryptobyte: pending child length %d exceeds %d-byte length prefix", length, child.pendingLenLen)
+		b.err = fmt.Errorf("littlebyte: pending child length %d exceeds %d-byte length prefix", length, child.pendingLenLen)
 		return
 	}
 
 	if b.fixedSize && &b.result[0] != &child.result[0] {
-		panic("cryptobyte: BuilderContinuation reallocated a fixed-size buffer")
+		panic("littlebyte: BuilderContinuation reallocated a fixed-size buffer")
 	}
 
 	b.result = child.result
@@ -244,13 +244,13 @@ func (b *Builder) add(bytes ...byte) {
 		return
 	}
 	if b.child != nil {
-		panic("cryptobyte: attempted write while child is pending")
+		panic("littlebyte: attempted write while child is pending")
 	}
 	if len(b.result)+len(bytes) < len(bytes) {
-		b.err = errors.New("cryptobyte: length overflow")
+		b.err = errors.New("littlebyte: length overflow")
 	}
 	if b.fixedSize && len(b.result)+len(bytes) > cap(b.result) {
-		b.err = errors.New("cryptobyte: Builder is exceeding its fixed-size buffer")
+		b.err = errors.New("littlebyte: Builder is exceeding its fixed-size buffer")
 		return
 	}
 	b.result = append(b.result, bytes...)
@@ -264,14 +264,14 @@ func (b *Builder) Unwrite(n int) {
 		return
 	}
 	if b.child != nil {
-		panic("cryptobyte: attempted unwrite while child is pending")
+		panic("littlebyte: attempted unwrite while child is pending")
 	}
 	length := len(b.result) - b.pendingLenLen - b.offset
 	if length < 0 {
-		panic("cryptobyte: internal error")
+		panic("littlebyte: internal error")
 	}
 	if n > length {
-		panic("cryptobyte: attempted to unwrite more than was written")
+		panic("littlebyte: attempted to unwrite more than was written")
 	}
 	b.result = b.result[:len(b.result)-n]
 }
